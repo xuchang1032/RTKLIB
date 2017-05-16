@@ -351,7 +351,7 @@ static void corr_phase_bias_ssr(obsd_t *obs, int n, const nav_t *nav)
     }
 }
 /* process positioning -------------------------------------------------------*/
-static void procpos(FILE *fp, const prcopt_t *popt, const solopt_t *sopt, rtk_t *rtk,
+static void procpos(FILE *fp, FILE *fpvel, const prcopt_t *popt, const solopt_t *sopt, rtk_t *rtk,
                     int mode)
 {
     gtime_t time={0};
@@ -768,7 +768,8 @@ static int getstapos(const char *file, char *name, double *r)
     trace(1,"no station position: %s %s\n",name,file);
     return 0;
 }
-/* antenna phase center position ---------------------------------------------*/
+/* antenna phase center position -----------------------------------------------
+* args: rcvno       I   rover:1 base:2 */
 static int antpos(prcopt_t *opt, int rcvno, const obs_t *obs, const nav_t *nav,
                   const sta_t *sta, const char *posfile)
 {
@@ -956,10 +957,11 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
                    const solopt_t *sopt, const filopt_t *fopt, int flag,
                    char **infile, const int *index, int n, char *outfile)
 {
-    FILE *fp;
+    FILE *fp, *fpvel;
     rtk_t rtk;
     prcopt_t popt_=*popt;
-    char tracefile[1024],statfile[1024],path[1024],*ext;
+    solopt_t velopt = *sopt;
+    char tracefile[1024],statfile[1024],velfile[1024],path[1024],*ext;
     
     trace(3,"execses : n=%d outfile=%s\n",n,outfile);
     
@@ -1029,6 +1031,16 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
         rtkclosestat();
         rtkopenstat(statfile,sopt->sstat);
     }
+
+    /* open velocity solution file */
+    if (flag)
+    {
+        velopt.posf = SOLF_ENU;
+        strcpy(velfile, outfile);
+        strcpy(velfile+strlen(velfile)-4, "_vel.pos");
+        outhead(velfile, infile, n, &popt_, &velopt);
+    }
+
     /* write header to output file */
     if (flag&&!outhead(outfile,infile,n,&popt_,sopt)) {
         freeobsnav(&obss,&navs);
@@ -1036,33 +1048,45 @@ static int execses(gtime_t ts, gtime_t te, double ti, const prcopt_t *popt,
     }
     iobsu=iobsr=isbs=ilex=revs=aborts=0;
     
-    if (popt_.mode==PMODE_SINGLE||popt_.soltype==0) {
-        if ((fp=openfile(outfile))) {
-            procpos(fp,&popt_,sopt,&rtk,0); /* forward */
+    if (popt_.mode==PMODE_SINGLE||popt_.soltype==0) 
+    {
+        if ((fp=openfile(outfile)) &&
+            (fpvel = openfile(velfile))) 
+        {
+            procpos(fp,fpvel,&popt_,sopt,&rtk,0); /* forward */
             fclose(fp);
+            fclose(fpvel);
         }
     }
-    else if (popt_.soltype==1) {
-        if ((fp=openfile(outfile))) {
+    else if (popt_.soltype==1) 
+    {
+        if ((fp=openfile(outfile)) && 
+            (fpvel = openfile(velfile)))
+        {
             revs=1; iobsu=iobsr=obss.n-1; isbs=sbss.n-1; ilex=lexs.n-1;
-            procpos(fp,&popt_,sopt,&rtk,0); /* backward */
+            procpos(fp,fpvel,&popt_,sopt,&rtk,0); /* backward */
             fclose(fp);
+            fclose(fpvel);
         }
     }
-    else { /* combined */
+    else 
+    { /* combined */
         solf=(sol_t *)malloc(sizeof(sol_t)*nepoch);
         solb=(sol_t *)malloc(sizeof(sol_t)*nepoch);
         rbf=(double *)malloc(sizeof(double)*nepoch*3);
         rbb=(double *)malloc(sizeof(double)*nepoch*3);
         
-        if (solf&&solb) {
+        if (solf&&solb) 
+        {
             isolf=isolb=0;
-            procpos(NULL,&popt_,sopt,&rtk,1); /* forward */
+            procpos(NULL,NULL,&popt_,sopt,&rtk,1); /* forward */
             revs=1; iobsu=iobsr=obss.n-1; isbs=sbss.n-1; ilex=lexs.n-1;
-            procpos(NULL,&popt_,sopt,&rtk,1); /* backward */
+            procpos(NULL,NULL,&popt_,sopt,&rtk,1); /* backward */
             
             /* combine forward/backward solutions */
-            if (!aborts&&(fp=openfile(outfile))) {
+            if (!aborts&&
+                (fp=openfile(outfile))) 
+            {
                 combres(fp,&popt_,sopt);
                 fclose(fp);
             }

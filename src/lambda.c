@@ -15,6 +15,7 @@
 *           2015/05/31 1.1 add api lambda_reduction(), lambda_search()
 *-----------------------------------------------------------------------------*/
 #include "rtklib.h"
+#include "debugconf.h"
 
 static const char rcsid[]="$Id: lambda.c,v 1.1 2008/07/17 21:48:06 ttaka Exp $";
 
@@ -183,24 +184,37 @@ extern int lambda(int n, int m, const double *a, const double *Q, double *F,
                   double *s)
 {
     int info;
-    double *L,*D,*Z,*z,*E;
-    
-    if (n<=0||m<=0) return -1;
-    L=zeros(n,n); D=mat(n,1); Z=eye(n); z=mat(n,1); E=mat(n,m);
-    
-    /* LD (lower diaganol) factorization (Q=L'*diag(D)*L) */
-    if (!(info=LD(n,Q,L,D))) {
-        
-        /* lambda reduction (z=Z'*a, Qz=Z'*Q*Z=L'*diag(D)*L) */
-        reduction(n,L,D,Z);
-        matmul("TN",n,1,n,1.0,Z,a,0.0,z); /* z=Z'*a */
-        
-        /* mlambda search 
-		    z = transformed double-diff phase biases
-			L,D = transformed covariance matrix */
-        if (!(info=search(n,m,L,D,z,E,s))) {  /* returns 0 if no error */
-            
-            info=solve("T",Z,E,n,m,F); /* F=Z'\E */
+    double *L, *D, *Z, *z, *E;
+
+    if (n <= 0 || m <= 0) 
+        return -1;
+    L = zeros(n, n);
+    D = mat(n, 1);
+    Z = eye(n);
+    z = mat(n, 1);
+    E = mat(n, m);
+
+    /* LD factorization */
+    if (!(info = LD(n, Q, L, D)))
+    {
+        trace(DBG_AMB_DEEP, "L1 = "); tracemat(DBG_AMB_DEEP, L, n, n, 7, 3);
+        trace(DBG_AMB_DEEP, "D1 = "); tracemat(DBG_AMB_DEEP, D, 1, n, 7, 3);
+
+        /* lambda reduction */
+        reduction(n, L, D, Z);
+        matmul("TN", n, 1, n, 1.0, Z, a, 0.0, z); /* z=Z'*a */
+
+        trace(DBG_AMB_DEEP, "Z = "); tracemat(DBG_AMB_DEEP, Z, n, n, 7, 3);
+        trace(DBG_AMB_DEEP, "z = "); tracemat(DBG_AMB_DEEP, z, 1, n, 7, 3);
+        /* mlambda search */
+        trace(DBG_AMB_DEEP, "MLAMBDA Search\n");
+        trace(DBG_AMB_DEEP, "L2 = "); tracemat(DBG_AMB_DEEP, L, n, n, 7, 3);
+        trace(DBG_AMB_DEEP, "D2 = "); tracemat(DBG_AMB_DEEP, D, 1, n, 7, 3);
+        if (!(info = search(n, m, L, D, z, E, s)))
+        {
+            trace(DBG_AMB_DEEP, "E = "); tracemat(DBG_AMB_DEEP, E, n, m, 7, 3);
+            trace(DBG_AMB_DEEP, "s = "); tracemat(DBG_AMB_DEEP, s, 1, m, 7, 3);
+            info = solve("T", Z, E, n, m, F); /* F=Z'\E */
         }
     }
     free(L); free(D); free(Z); free(z); free(E);

@@ -130,14 +130,19 @@
 #define _POSIX_C_SOURCE 199506
 #include <stdarg.h>
 #include <ctype.h>
+
+#include "rtklib.h"
+#include "debugconf.h"
+
 #ifndef WIN32
 #include <dirent.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#else
+#pragma comment( lib,"winmm.lib" )
 #endif
-#include "rtklib.h"
 
 static const char rcsid[]="$Id: rtkcmn.c,v 1.1 2008/07/17 21:48:06 ttaka Exp ttaka $";
 
@@ -337,6 +342,14 @@ static const unsigned int tbl_CRC24Q[]={
     0x87B4A6,0x01F85D,0x0D61AB,0x8B2D50,0x145247,0x921EBC,0x9E874A,0x18CBB1,
     0xE37B16,0x6537ED,0x69AE1B,0xEFE2E0,0x709DF7,0xF6D10C,0xFA48FA,0x7C0401,
     0x42FA2F,0xC4B6D4,0xC82F22,0x4E63D9,0xD11CCE,0x575035,0x5BC9C3,0xDD8538
+};
+const double ura_value[]={              /* ura max values */
+    2.4,3.4,4.85,6.85,9.65,13.65,24.0,48.0,96.0,192.0,384.0,768.0,1536.0,
+    3072.0,6144.0
+};
+static const double ura_nominal[]={     /* ura nominal values */
+    2.0,2.8,4.0,5.7,8.0,11.3,16.0,32.0,64.0,128.0,256.0,512.0,1024.0,
+    2048.0,4096.0,8192.0
 };
 /* function prototypes -------------------------------------------------------*/
 #ifdef MKL
@@ -793,6 +806,7 @@ extern double *mat(int n, int m)
     if (!(p=(double *)malloc(sizeof(double)*n*m))) {
         fatalerr("matrix memory allocation error: n=%d,m=%d\n",n,m);
     }
+    memset(p, 0, sizeof(double)*n*m);
     return p;
 }
 /* new integer matrix ----------------------------------------------------------
@@ -1099,7 +1113,7 @@ extern int lsq(const double *A, const double *y, int n, int m, double *x,
 *
 * args   : double *x        I   states vector (n x 1)
 *          double *P        I   covariance matrix of states (n x n)
-*          double *H        I   transpose of design matrix (n x m)
+*          double *H        I   design matrix (m x n)
 *          double *v        I   innovation (measurement - model) (m x 1)
 *          double *R        I   covariance matrix of measurement error (m x m)
 *          int    n,m       I   number of states and measurements
@@ -1113,47 +1127,109 @@ static int filter_(const double *x, const double *P, const double *H,
                    const double *v, const double *R, int n, int m,
                    double *xp, double *Pp)
 {
-    double *F=mat(n,m),*Q=mat(m,m),*K=mat(n,m),*I=eye(n);
+    double *F=mat(n,m),*Q=mat(m,m),*K=mat(n,m),*I=eye(n),*D=mat(n,1);
     int info;
     
     matcpy(Q,R,m,m);
     matcpy(xp,x,n,1);
-    matmul("NN",n,m,n,1.0,P,H,0.0,F);       /* Q=H'*P*H+R */
-    matmul("TN",m,m,n,1.0,H,F,1.0,Q);
+    matmul("NT",n,m,n,1.0,P,H,0.0,F);       /* Q=H*P*H'+R */
+    trace(DBG_KF_DEEP, "PH' = "); tracemat(DBG_KF_DEEP, F, n, m, 7, 3);
+    matmul("NN",m,m,n,1.0,H,F,1.0,Q);
+    trace(DBG_KF_DEEP, "HPH' + R = "); tracemat(DBG_KF_DEEP, Q, m, m, 7, 3);
     if (!(info=matinv(Q,m))) {
-        matmul("NN",n,m,m,1.0,F,Q,0.0,K);   /* K=P*H*Q^-1 */
+        trace(DBG_KF_DEEP, "(HPH'+R)^-1 = "); tracemat(DBG_KF_DEEP, Q, m, m, 7, 3);
+        matmul("NN",n,m,m,1.0,F,Q,0.0,K);   /* K=P*H'*Q^-1 */
+		trace(DBG_KF_DEEP,"K = "); tracemat(DBG_KF_DEEP,K,n,m,7,3);
+
+        if (DBG_KF_DEEP)
+        {
+            matmul("NN", n, 1, m, 1.0, K, v, 0.0, D);
+            trace(DBG_KF_DEEP, "Delta = "); tracemat(DBG_KF_DEEP, D, 1, n, 7, 3);
+        }
+        
         matmul("NN",n,1,m,1.0,K,v,1.0,xp);  /* xp=x+K*v */
-        matmul("NT",n,n,m,-1.0,K,H,1.0,I);  /* Pp=(I-K*H')*P */
+        matmul("NN",n,n,m,-1.0,K,H,1.0,I);  /* Pp=(I-K*H)*P */
+        trace(DBG_KF_DEEP, "I-KH = "); tracemat(DBG_KF_DEEP, I, n, n, 7, 3);
         matmul("NN",n,n,n,1.0,I,P,0.0,Pp);
     }
     free(F); free(Q); free(K); free(I);
+    free(D);
     return info;
 }
+
+/* shrink matrix&vector --------------------------------------------------------
+* args   : double *x        IO  state vector (nx*1)
+*          double *P        IO  covariance matrix (nx*nx)
+*          double *H        I   design matrix (nx*nv)
+*          double *v        I   innovation vector (nv*1)
+*          double *R        I   measurement error covariance (nv*nv)
+*          int n            I   all state number
+*          int m            I   innovation number */
 extern int filter(double *x, double *P, const double *H, const double *v,
                   const double *R, int n, int m)
 {
     double *x_,*xp_,*P_,*Pp_,*H_;
     int i,j,k,info,*ix;
     
-    /* create list of non-zero states */
-    ix=imat(n,1); for (i=k=0;i<n;i++) if (x[i]!=0.0&&P[i+i*n]>0.0) ix[k++]=i;
-    x_=mat(k,1); xp_=mat(k,1); P_=mat(k,k); Pp_=mat(k,k); H_=mat(k,m);
-    /* compress array by removing zero elements to save computation time */
-    for (i=0;i<k;i++) {
+    ix=imat(n,1); 
+    for (i = k = 0; i < n; i++)
+    {
+        if (x[i] != 0.0 && P[i + i*n] > 0.0)
+            ix[k++] = i;
+    }
+    /* k: valid state number
+      ix: valid state index in original state vector */
+
+    x_=mat(k,1);    /* state vector before update */
+    xp_=mat(k,1);   /* state vector after update */
+    P_=mat(k,k);    /* covariance matrix before update */
+    Pp_=mat(k,k);   /* covariance matrix after update */
+    H_=mat(m,k);    /* shrinked design matrix */
+
+    /* shrink H matrix */
+    for (i = 0; i < m; i++)
+    {
+        for (j = 0; j < k; j++)
+        {
+            H_[i + j*m] = H[ix[j] +  i * n];
+        }
+    }
+
+    for (i=0;i<k;i++) 
+    {
+        /* shrink state vector */
         x_[i]=x[ix[i]];
-        for (j=0;j<k;j++) P_[i+j*k]=P[ix[i]+ix[j]*n];
-        for (j=0;j<m;j++) H_[i+j*k]=H[ix[i]+j*n];
+
+        /* shrink KF covariance matrix */
+        for (j=0;j<k;j++) 
+            P_[i+j*k]=P[ix[i]+ix[j]*n];
     }
-    /* do kalman filter state update on compressed arrays */
+
+    trace(DBG_KF, "prior state x = "); tracemat(DBG_KF, x_, 1, k, 5, 3);
+    trace(DBG_KF, "prior variance P = "); tracemat(DBG_KF, P_, k, k, 7, 4);
+    trace(DBG_KF, "innovation v = "); tracemat(DBG_KF, v, 1, m, 5, 3);
+    trace(DBG_KF, "H = "); tracemat(DBG_KF, H_, m, k, 7, 3);
+    trace(DBG_KF, "measurement variance R = "); tracemat(DBG_KF, R, m, m, 7, 4);
+
     info=filter_(x_,P_,H_,v,R,k,m,xp_,Pp_);
-    /* copy values from compressed arrays back to full arrays */
-    for (i=0;i<k;i++) {
+
+    trace(DBG_KF, "post state x = "); tracemat(DBG_KF, xp_, 1, k, 5, 3);
+    trace(DBG_KF, "post variance P = "); tracemat(DBG_KF, Pp_, k, k, 7, 4);
+
+    for (i=0;i<k;i++) 
+    {
+        /* recover filtered state to orginal state vector */
         x[ix[i]]=xp_[i];
-        for (j=0;j<k;j++) P[ix[i]+ix[j]*n]=Pp_[i+j*k];
+
+        /* recover filtered covariance to orginal covariance matrix */
+        for (j=0;j<k;j++) 
+            P[ix[i]+ix[j]*n]=Pp_[i+j*k];
     }
+
     free(ix); free(x_); free(xp_); free(P_); free(Pp_); free(H_);
     return info;
 }
+
 /* smoother --------------------------------------------------------------------
 * combine forward and backward filters by fixed-interval smoother as follows:
 *
@@ -2611,6 +2687,41 @@ static void uniqseph(nav_t *nav)
     
     trace(4,"uniqseph: ns=%d\n",nav->ns);
 }
+/* ura index to ura nominal value (m) ----------------------------------------*/
+extern double uravalue(int ura, int sys)
+{
+    if (sys==SYS_GAL) {
+        if (ura>0 && ura<50)
+            return ura/100.0;
+        else if (ura>=50 && ura<75)
+            return (50.0+2.0*(ura-50.0))/100.0;
+        else if (ura>=75 && ura<100)
+            return (100.0+4.0*(ura-75.0))/100.0;
+        else if (ura>=100 && ura<=125)
+            return (200.0+16.0*(ura-100.0))/100.0;
+        else
+            return 6.0;
+    } else
+        return 0<=ura&&ura<15?ura_nominal[ura]:8192.0;
+}
+extern int uraindex(double value, int sys)
+{
+    int i;
+
+    if (sys==SYS_GAL) {
+        if (value>0 && value<0.5)
+            i=(int)(value*100+0.5);
+        else if (value>=0.5 && value<1.0)
+            i=50+(int)((value-0.5)/2*100+0.5);
+        else if (value>=1.0 && value<2.0)
+            i=75+(int)((value-1.0)/4*100);
+        else if (value>=2.0 && value<6.0)
+            i=100+(int)((value-2.0)/16*100+0.5);
+        else i=125;
+    } else
+        for (i=0;i<15;i++) if (ura_value[i]>=value) break;
+    return i;
+}
 /* unique ephemerides ----------------------------------------------------------
 * unique ephemerides in navigation data and update carrier wave length
 * args   : nav_t *nav    IO     navigation data
@@ -2900,14 +3011,10 @@ extern void tracelevel(int level)
 extern void trace(int level, const char *format, ...)
 {
     va_list ap;
-    
-    /* print error message to stderr */
-    if (level<=1) {
-        va_start(ap,format); vfprintf(stderr,format,ap); va_end(ap);
-    }
+    if (level != level_trace) return;
     if (!fp_trace||level>level_trace) return;
     traceswap();
-    fprintf(fp_trace,"%d ",level);
+    //fprintf(fp_trace,"%d ",level);
     va_start(ap,format); vfprintf(fp_trace,format,ap); va_end(ap);
     fflush(fp_trace);
 }
@@ -2923,7 +3030,9 @@ extern void tracet(int level, const char *format, ...)
 }
 extern void tracemat(int level, const double *A, int n, int m, int p, int q)
 {
+    if (level != level_trace) return;
     if (!fp_trace||level>level_trace) return;
+    fprintf(fp_trace, "[%d x %d]\n", n, m);
     matfprint(A,n,m,p,q,fp_trace); fflush(fp_trace);
 }
 extern void traceobs(int level, const obsd_t *obs, int n)
@@ -3880,6 +3989,10 @@ extern int rtk_uncompress(const char *file, char *uncfile)
 extern int showmsg(char *format,...) {return 0;}
 extern void settspan(gtime_t ts, gtime_t te) {}
 extern void settime(gtime_t time) {}
+#else
+#define showmsg(...) ((void)0)
+#define settspan(...) ((void)0)
+#define settime(...) ((void)0)
 #endif
 
 /* dummy functions for lex extentions ----------------------------------------*/

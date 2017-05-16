@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="rcv\binex.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\cmr.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="convkml.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="convrnx.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\crescent.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="datum.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="download.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ephemeris.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="geoid.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\gw10.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="ionex.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\javad.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="lambda.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\novatel.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\nvs.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="options.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="pntpos.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="postpos.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="ppp.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="ppp_ar.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="ppp_corr.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="qzslex.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\rcvlex.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcvraw.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rinex.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\rt17.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rtcm.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rtcm2.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rtcm3.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rtcm3e.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\ublox.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\skytraq.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\septentrio.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="sbas.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="tle.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="tides.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="streamsvr.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="stream.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="solution.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="preceph.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="rcv\ss2.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="rtksvr.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="rtkcmn.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="rtkpos.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="gis.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="analysis.c">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="dynspp.c">
+      <Filter>algorithm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="receiver">
+      <UniqueIdentifier>{98900514-ac11-430e-b8ea-a35d77386fe0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{f0a53fe9-bf6b-4041-93f4-4db8bc556bc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm">
+      <UniqueIdentifier>{a6e1bd64-2346-4975-9e1b-c78710f2b2df}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="rtklib.h" />
+  </ItemGroup>
+</Project>

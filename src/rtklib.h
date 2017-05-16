@@ -51,8 +51,10 @@ extern "C" {
 #ifdef WIN_DLL
 #define EXPORT __declspec(dllexport) /* for Windows DLL */
 #else
-#define EXPORT
+#define EXPORT __declspec(dllimport)
 #endif
+
+#pragma warning( disable : 4996)
 
 /* constants -----------------------------------------------------------------*/
 
@@ -534,9 +536,10 @@ typedef struct {        /* time struct */
 
 typedef struct {        /* observation data record */
     gtime_t time;       /* receiver sampling time (GPST) */
-    unsigned char sat,rcv; /* satellite/receiver number */
+    unsigned char sat;  /* satellite */
+    unsigned char rcv;  /* receiver number, 1: rover, 2: base */
     unsigned char SNR [NFREQ+NEXOBS]; /* signal strength (0.25 dBHz) */
-    unsigned char LLI [NFREQ+NEXOBS]; /* loss of lock indicator */
+    unsigned char LLI [NFREQ+NEXOBS]; /* loss of lock indicator, bit0: CS possible, bit1: half-CS possible */
     unsigned char code[NFREQ+NEXOBS]; /* code indicator (CODE_???) */
     unsigned char qualL[NFREQ+NEXOBS]; /* quality of carrier phase measurement */
     unsigned char qualP[NFREQ+NEXOBS]; /* quality of pseudorange measurement */
@@ -920,7 +923,8 @@ typedef struct {        /* solution type */
     float  qr[6];       /* position variance/covariance (m^2) */
                         /* {c_xx,c_yy,c_zz,c_xy,c_yz,c_zx} or */
                         /* {c_ee,c_nn,c_uu,c_en,c_nu,c_ue} */
-    double dtr[6];      /* receiver clock bias to time systems (s) */
+    double dtr[NSYS];      /* receiver clock bias to time systems (s) */
+	double ddt;			/* clock drift */
     unsigned char type; /* type (0:xyz-ecef,1:enu-baseline) */
     unsigned char stat; /* solution status (SOLQ_???) */
     unsigned char ns;   /* number of valid satellites */
@@ -1181,6 +1185,9 @@ typedef struct {        /* satellite status type */
     unsigned char sys;  /* navigation system */
     unsigned char vs;   /* valid satellite flag single */
     double azel[2];     /* azimuth/elevation angles {az,el} (rad) */
+    double innop[NFREQ];/* innovation of pseudorange */
+    double innoc[NFREQ];/* innovation of carrier-phase */
+    double innod[NFREQ];/* innovation of doppler */
     double resp[NFREQ]; /* residuals of pseudorange (m) */
     double resc[NFREQ]; /* residuals of carrier-phase (m) */
 	double icbias[NFREQ];  /* glonass IC bias (cycles) */
@@ -1215,8 +1222,8 @@ typedef struct {        /* RTK control/result type */
     double rb[6];       /* base position/velocity (ecef) (m|m/s) */
     int nx,na;          /* number of float states/fixed states */
     double tt;          /* time difference between current and previous (s) */
-    double *x, *P;      /* float states and their covariance */
-    double *xa,*Pa;     /* fixed states and their covariance */
+    double *x, *P;      /* float states and their covariance, SD */
+    double *xa,*Pa;     /* fixed states and their covariance, DD */
     int nfix;           /* number of continuous fixes of ambiguity */
     int excsat;         /* index of next satellite to be excluded for partial ambiguity resolution */
 	double com_bias;    /* phase bias common between all sats (used to be distributed to all sats */
@@ -1407,15 +1414,15 @@ typedef struct {        /* imu type */
 typedef void fatalfunc_t(const char *); /* fatal callback function type */
 
 /* global variables ----------------------------------------------------------*/
-extern const double chisqr[];        /* chi-sqr(n) table (alpha=0.001) */
-extern const double lam_carr[];      /* carrier wave length (m) {L1,L2,...} */
-extern const double ura_value[];     /* user range accuracy translation table */
-extern const prcopt_t prcopt_default; /* default positioning options */
-extern const solopt_t solopt_default; /* default solution output options */
-extern const sbsigpband_t igpband1[9][8]; /* SBAS IGP band 0-8 */
-extern const sbsigpband_t igpband2[2][5]; /* SBAS IGP band 9-10 */
-extern const char *formatstrs[];     /* stream format strings */
-extern opt_t sysopts[];              /* system options table */
+EXPORT extern const double chisqr[];        /* chi-sqr(n) table (alpha=0.001) */
+EXPORT extern const double lam_carr[];      /* carrier wave length (m) {L1,L2,...} */
+EXPORT extern const double ura_value[];     /* user range accuracy translation table */
+EXPORT extern const prcopt_t prcopt_default; /* default positioning options */
+EXPORT extern const solopt_t solopt_default; /* default solution output options */
+EXPORT extern const sbsigpband_t igpband1[9][8]; /* SBAS IGP band 0-8 */
+EXPORT extern const sbsigpband_t igpband2[2][5]; /* SBAS IGP band 9-10 */
+EXPORT extern const char *formatstrs[];     /* stream format strings */
+EXPORT extern opt_t sysopts[];              /* system options table */
 
 /* satellites, systems, codes functions --------------------------------------*/
 EXPORT int  satno   (int sys, int prn);
@@ -1832,6 +1839,14 @@ EXPORT int  rtkpos (rtk_t *rtk, const obsd_t *obs, int nobs, const nav_t *nav);
 EXPORT int  rtkopenstat(const char *file, int level);
 EXPORT void rtkclosestat(void);
 EXPORT int  rtkoutstat(rtk_t *rtk, char *buff);
+
+/* dynamic standard point positioning ----------------------------------------*/
+EXPORT extern void dynspp(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav);
+
+/* import reference position/velocity for analysis----------------------------*/
+EXPORT extern void setstaref(double coor[]);
+EXPORT extern void setdynref(char *posfile, char *velfile);
+EXPORT extern int  getrefpos(gtime_t t, double *refpos, double *refvel);
 
 /* precise point positioning -------------------------------------------------*/
 EXPORT void pppos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav);
