@@ -2170,7 +2170,8 @@ static int relpos(rtk_t *rtk, const obsd_t *obs, int nu, int nr,
     else if (stat!=SOLQ_NONE) {
         /* if valid fixed solution, process it */
         if (manage_amb_LAMBDA(rtk,bias,xa,sat,nf,ns)>1) {
-        trace(DBG_AMB, "resamb_LAMBDA success\n");
+
+            trace(DBG_AMB, "resamb_LAMBDA success\n");
             /* find zero-diff residuals for fixed solution */
             if (zdres(0,obs,nu,rs,dts,svh,nav,xa,opt,0,y,e,azel)) {
                 

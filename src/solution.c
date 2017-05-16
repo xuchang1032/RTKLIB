@@ -1630,6 +1630,32 @@ extern void outsol(FILE *fp, const sol_t *sol, const double *rb,
         fwrite(buff,n,1,fp);
     }
 }
+
+extern void outsolvel(FILE *fp, const sol_t *sol, const double *rb,
+    const solopt_t *opt)
+{
+    unsigned char buff[MAXSOLMSG + 1];
+    int n, i;
+    static double rb1[3] = { 0 };
+    sol_t cpsol = *sol;
+    solopt_t cpopt = *opt;
+    trace(6, "outsolvel  : \n");
+    if (NULL == fp) return;
+    cpopt.posf = SOLF_ENU;
+    if (norm(rb1,3) == 0)
+    {
+        rb1[0] = sol->rr[0]; rb1[1] = sol->rr[1]; rb1[2] = sol->rr[2];
+    }
+    for (i = 0; i < 3; i ++)
+    {
+        cpsol.rr[i] = rb1[i] + sol->rr[i + 3]; /* output velocity */
+    }
+
+    if ((n = outsols(buff, &cpsol, rb1, &cpopt)) > 0) {
+        fwrite(buff, n, 1, fp);
+    }
+}
+
 /* output solution extended ----------------------------------------------------
 * output solution exteneded infomation to file
 * args   : FILE   *fp       I   output file pointer

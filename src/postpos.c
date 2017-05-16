@@ -398,6 +398,7 @@ static void procpos(FILE *fp, FILE *fpvel, const prcopt_t *popt, const solopt_t 
         if (mode==0) { /* forward/backward */
             if (!solstatic) {
                 outsol(fp,&rtk->sol,rtk->rb,sopt);
+                outsolvel(fpvel, &rtk->sol, rtk->rb, sopt);
             }
             else if (time.time==0||pri[rtk->sol.stat]<=pri[sol.stat]) {
                 sol=rtk->sol;

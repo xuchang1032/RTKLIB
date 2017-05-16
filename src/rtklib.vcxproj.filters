@@ -10,9 +10,6 @@
     <ClCompile Include="convkml.c">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="convrnx.c">
-      <Filter>utils</Filter>
-    </ClCompile>
     <ClCompile Include="rcv\crescent.c">
       <Filter>receiver</Filter>
     </ClCompile>
@@ -142,6 +139,9 @@
     <ClCompile Include="dynspp.c">
       <Filter>algorithm</Filter>
     </ClCompile>
+    <ClCompile Include="convrnx.c">
+      <Filter>receiver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="receiver">
@@ -156,5 +156,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rtklib.h" />
+    <ClInclude Include="debugconf.h" />
   </ItemGroup>
 </Project>
