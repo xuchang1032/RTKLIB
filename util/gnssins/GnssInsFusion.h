@@ -11,6 +11,8 @@ public:
     ~CGnssInsFusion();
 
     CCarAHRS m_CarAHRS;
+
+    void ProcThread();
 };
 
 #endif
