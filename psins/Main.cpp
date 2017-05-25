@@ -6,7 +6,8 @@ int main(void)
 	CFileRdWt fins("H:\\ygm2016\\精准\\PSINS-CPP\\ins.bin", 0);
 	CFileRdWt fkf("H:\\ygm2016\\精准\\PSINS-CPP\\kf.bin", 0);
 
-	CVect3 wm, vm, gpsVn, gpsPos, pos0(34.2120468*glv.deg,108.8323824*glv.deg,404.684), mag;
+	CVect3 wm, vm, gpsVn, gpsPos, mag;
+    CVect3 pos0(34.2120468*glv.deg, 108.8323824*glv.deg, 404.684);
 	int SatNum=0, res=0;
 	double ts=0.01, PDOP, gpsYaw=0, wz;
 		
@@ -31,7 +32,10 @@ int main(void)
 		mag = CVect3(&fin.buff[25]);
 //		baro = fin.buff[28];
 		
+        /* Update statistics */
 		ravar.Update(norm(kf.sins.an), norm(kf.sins.vn), norm(kf.sins.wnb), norm(gpsVn), normXY(gpsPos)*glv.Re);
+
+        /* Adjust measurement model based on statistics */
 		wz = ravar(2);
 		if(PDOP>1.0 && PDOP<7.0 && SatNum>4 && wz<5*glv.dps)   // GPS速度组合
 		{
@@ -58,7 +62,11 @@ int main(void)
 		{
 			kf.SetMeasMag(mag);
 		}
+
+        /* Update fusion filter */
 		res = kf.Update(wm, vm, ts);
+
+        /* Output fusion results */
 		if(kf.yawAlignOK)
 		{
 			fkf<<kf;

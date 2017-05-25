@@ -13,6 +13,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gnssins", "util\gnssins\gns
 		{04611BC8-C6C0-4176-BDA7-9D73D713A2EB} = {04611BC8-C6C0-4176-BDA7-9D73D713A2EB}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gnssproc", "util\gnssproc\gnssproc.vcxproj", "{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}"
+	ProjectSection(ProjectDependencies) = postProject
+		{04611BC8-C6C0-4176-BDA7-9D73D713A2EB} = {04611BC8-C6C0-4176-BDA7-9D73D713A2EB}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -39,6 +44,14 @@ Global
 		{3390866F-B2FA-406B-B21D-51EA8214DA93}.Release|Win32.ActiveCfg = Release|Win32
 		{3390866F-B2FA-406B-B21D-51EA8214DA93}.Release|Win32.Build.0 = Release|Win32
 		{3390866F-B2FA-406B-B21D-51EA8214DA93}.Release|x64.ActiveCfg = Release|Win32
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Debug|Win32.Build.0 = Debug|Win32
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Debug|x64.ActiveCfg = Debug|x64
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Debug|x64.Build.0 = Debug|x64
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Release|Win32.ActiveCfg = Release|Win32
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Release|Win32.Build.0 = Release|Win32
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Release|x64.ActiveCfg = Release|x64
+		{B368BEFA-278A-4F7C-93BD-A5A16C67BE09}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
